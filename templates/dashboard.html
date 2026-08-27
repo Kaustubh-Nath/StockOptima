@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}StockOptima | Inventory Insights Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- ChartJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Inventory Dashboard</h1>
+        <div class="page-subtitle">Real-time ML demand predictions and warehousing insights</div>
+    </div>
+    <div>
+        <a href="{{ url_for('predict') }}" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            New Prediction
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Cards Grid -->
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-title">Total SKUs</div>
+        <div class="metric-value">{{ total_products }}</div>
+        <div class="metric-desc">Monitored dataset products</div>
+    </div>
+    
+    <div class="metric-card success">
+        <div class="metric-title">Avg Demand Forecast</div>
+        <div class="metric-value">{{ "%.1f" | format(avg_demand) }}</div>
+        <div class="metric-desc">Units predicted per product</div>
+    </div>
+    
+    <div class="metric-card danger">
+        <div class="metric-title">Low Stock SKUs</div>
+        <div class="metric-value">{{ low_stock_count }}</div>
+        <div class="metric-desc">Current inventory under 20 units</div>
+    </div>
+    
+    <div class="metric-card warning">
+        <div class="metric-title">Overstocked SKUs</div>
+        <div class="metric-value">{{ overstock_count }}</div>
+        <div class="metric-desc">Current Stock > Predicted Demand</div>
+    </div>
+</div>
+
+<!-- Live Interactive Charts -->
+<div class="charts-grid">
+    <div class="glass-card">
+        <div class="card-header">
+            <h2>Current Stock vs Predicted Demand</h2>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">By Product Category</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="categoryStockChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div class="card-header">
+            <h2>Model R² Validation Scores</h2>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">Higher score means better fit</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="modelR2Chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Alert Alerts & Product Sample Overview -->
+<div class="glass-card">
+    <div class="card-header">
+        <h2>Stock Optimization Alerts (Sample Overview)</h2>
+        <div class="page-subtitle">Showing active business suggestions for a subset of the inventory</div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Rating</th>
+                    <th>Festival Season</th>
+                    <th>Selling Price</th>
+                    <th>Predicted Demand</th>
+                    <th>Recommended Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prod in sample_products %}
+                <tr>
+                    <td><strong>{{ prod['Product Category'] }}</strong></td>
+                    <td>{{ prod['Current Stock'] }}</td>
+                    <td>★ {{ prod['Customer Rating'] }}</td>
+                    <td>
+                        {% if prod['Festival Season'] == 'Yes' %}
+                        <span class="text-warning">Yes</span>
+                        {% else %}
+                        <span>No</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ "%.2f" | format(prod['Current Selling Price']) }}</td>
+                    <td class="text-success"><strong>{{ prod['Predicted Demand'] }}</strong></td>
+                    <td>
+                        {% if prod['Current Stock'] < 20 and prod['Predicted Demand'] > 100 %}
+                        <span class="result-recommendation rec-reorder" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; margin:0;">Reorder Immediately</span>
+                        {% elif prod['Predicted Demand'] > prod['Current Stock'] %}
+                        <span class="result-recommendation rec-increase" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; margin:0;">Increase Stock</span>
+                        {% elif prod['Predicted Demand'] < prod['Current Stock'] %}
+                        <span class="result-recommendation rec-reduce" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; margin:0;">Reduce Stock</span>
+                        {% else %}
+                        <span class="result-recommendation rec-maintain" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; margin:0;">Maintain Inventory</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Injected variables from Flask
+    const categoryLabels = {{ category_labels | tojson }};
+    const categoryStocks = {{ category_stocks | tojson }};
+    const categoryDemands = {{ category_demands | tojson }};
+    
+    const modelNames = {{ model_names | tojson }};
+    const modelR2s = {{ model_r2s | tojson }};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

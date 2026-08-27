@@ -1,0 +1,20 @@
+{
+    "Decision Tree": {
+        "R2": 0.9821,
+        "MAE": 14.5,
+        "MSE": 351.55,
+        "RMSE": 18.75
+    },
+    "Random Forest": {
+        "R2": 0.9872,
+        "MAE": 12.38,
+        "MSE": 252.25,
+        "RMSE": 15.88
+    },
+    "Gradient Boosting": {
+        "R2": 0.9883,
+        "MAE": 11.96,
+        "MSE": 230.05,
+        "RMSE": 15.17
+    }
+}

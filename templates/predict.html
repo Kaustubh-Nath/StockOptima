@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}StockOptima | Forecast Product Demand{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Demand Forecast Engine</h1>
+        <div class="page-subtitle">Configure features to predict demand and obtain stock replenishment recommendations</div>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div class="card-header">
+        <h2>Enter Product & Market Features</h2>
+        <div class="page-subtitle">Fill in details below to execute the regressors</div>
+    </div>
+    
+    <form id="predictionForm" action="{{ url_for('predict') }}" method="POST">
+        <div class="predict-form-grid">
+            <!-- Optional Product Name for History tracking -->
+            <div class="form-group">
+                <label for="product_name">Product Name / Identifier (Optional)</label>
+                <input type="text" id="product_name" name="product_name" class="form-control" placeholder="e.g. Smart Watch Model X" value="">
+            </div>
+            
+            <div class="form-group">
+                <label for="product_category">Product Category *</label>
+                <select id="product_category" name="product_category" class="form-control" required>
+                    <option value="" disabled selected>Select category...</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Grocery">Grocery</option>
+                    <option value="Home & Kitchen">Home & Kitchen</option>
+                    <option value="Beauty & Personal Care">Beauty & Personal Care</option>
+                    <option value="Sports & Outdoors">Sports & Outdoors</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="current_stock">Current Stock Level (Units) *</label>
+                <input type="number" id="current_stock" name="current_stock" class="form-control" min="0" placeholder="e.g. 120" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="previous_month_sales">Previous Month Sales (Units) *</label>
+                <input type="number" id="previous_month_sales" name="previous_month_sales" class="form-control" min="0" placeholder="e.g. 180" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="avg_weekly_sales">Average Weekly Sales (Units) *</label>
+                <input type="number" id="avg_weekly_sales" name="avg_weekly_sales" class="form-control" min="0" step="0.01" placeholder="e.g. 45" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="selling_price">Current Selling Price ($) *</label>
+                <input type="number" id="selling_price" name="selling_price" class="form-control" min="0.01" step="0.01" placeholder="e.g. 99.99" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="competitor_price">Competitor Price ($) *</label>
+                <input type="number" id="competitor_price" name="competitor_price" class="form-control" min="0.01" step="0.01" placeholder="e.g. 104.99" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="customer_rating">Customer Rating (1 - 5) *</label>
+                <input type="number" id="customer_rating" name="customer_rating" class="form-control" min="1.0" max="5.0" step="0.1" placeholder="e.g. 4.2" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="festival_season">Festival / Promotion Season *</label>
+                <select id="festival_season" name="festival_season" class="form-control" required>
+                    <option value="No" selected>No (Normal Period)</option>
+                    <option value="Yes">Yes (Peak Holiday / Promo)</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Model Selection radio buttons -->
+        <div class="model-selector-wrapper">
+            <h3>Select Regression Model</h3>
+            <div class="model-cards">
+                <div class="model-option-card">
+                    <input type="radio" id="model_rf" name="selected_model" value="Random Forest" checked>
+                    <label for="model_rf" class="model-option-content">
+                        <span class="model-option-title">
+                            Random Forest
+                            <span class="recommended-badge">★ Best</span>
+                        </span>
+                        <span class="model-option-desc">Highly accurate ensemble method. Best performance and lowest error rate on tabular demand.</span>
+                    </label>
+                </div>
+                
+                <div class="model-option-card">
+                    <input type="radio" id="model_gb" name="selected_model" value="Gradient Boosting">
+                    <label for="model_gb" class="model-option-content">
+                        <span class="model-option-title">Gradient Boosting</span>
+                        <span class="model-option-desc">Sequential boosting ensemble. Great at handling structured datasets and minimizing residuals.</span>
+                    </label>
+                </div>
+                
+                <div class="model-option-card">
+                    <input type="radio" id="model_dt" name="selected_model" value="Decision Tree">
+                    <label for="model_dt" class="model-option-content">
+                        <span class="model-option-title">Decision Tree</span>
+                        <span class="model-option-desc">Single tree model. Fast prediction, easy to map, but prone to higher variance and error.</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Generate Forecast
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Glassmorphism Loading Spinner overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">ML ENGINE RUNNING PREDICTIONS...</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/predict.js') }}"></script>
+{% endblock %}

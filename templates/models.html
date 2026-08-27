@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}StockOptima | Model Comparison & Evaluation{% endblock %}
+
+{% block extra_css %}
+<!-- ChartJS CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Model Evaluation & Comparison</h1>
+        <div class="page-subtitle">Inspect evaluation metrics and determine the best forecasting regressor</div>
+    </div>
+</div>
+
+<!-- Comparison Summary Cards -->
+<div class="model-stat-grid">
+    {% for model_name, m in metrics.items() %}
+    {% set is_best = (model_name == best_model) %}
+    <div class="model-comparison-card {% if is_best %}best{% endif %}">
+        {% if is_best %}
+        <span class="best-badge">Best Model</span>
+        {% endif %}
+        <h3 class="metric-title">{{ model_name }}</h3>
+        <div class="model-perf-val">{{ (m['R2'] * 100) | round(2) }}%</div>
+        <div class="metric-desc">R² (Variance Explained)</div>
+        
+        <div class="model-perf-metrics">
+            <div>
+                MAE
+                <span>{{ m['MAE'] }}</span>
+            </div>
+            <div>
+                RMSE
+                <span>{{ m['RMSE'] }}</span>
+            </div>
+            <div>
+                MSE
+                <span>{{ m['MSE'] | int }}</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Model Performance Charts -->
+<div class="charts-grid">
+    <div class="glass-card">
+        <div class="card-header">
+            <h2>Accuracy Comparison (R² Score)</h2>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">Higher is better</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="r2Chart"></canvas>
+        </div>
+    </div>
+    
+    <div class="glass-card">
+        <div class="card-header">
+            <h2>Error Comparison (MAE vs RMSE)</h2>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">Lower is better</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="errorChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Model Overview Table -->
+<div class="glass-card">
+    <div class="card-header">
+        <h2>ML Regression Performance Matrix</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Model Regressor</th>
+                    <th>R² Score (Accuracy)</th>
+                    <th>Mean Absolute Error (MAE)</th>
+                    <th>Root Mean Squared Error (RMSE)</th>
+                    <th>Mean Squared Error (MSE)</th>
+                    <th>Model Complexity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for name, m in metrics.items() %}
+                <tr>
+                    <td><strong>{{ name }} Regressor</strong></td>
+                    <td class="text-success"><strong>{{ m['R2'] }}</strong></td>
+                    <td>{{ m['MAE'] }} units</td>
+                    <td>{{ m['RMSE'] }} units</td>
+                    <td>{{ m['MSE'] }} units²</td>
+                    <td>
+                        {% if name == 'Random Forest' %}
+                        <span>Ensemble (100 Trees, Depth=9)</span>
+                        {% elif name == 'Gradient Boosting' %}
+                        <span>Ensemble (Boosting, Depth=4)</span>
+                        {% else %}
+                        <span>Single Tree (Depth=6)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Serialize metrics map to window object
+    window.metricsData = {{ metrics | tojson }};
+    window.bestModel = "{{ best_model }}";
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Script to draw models charts -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const data = window.metricsData;
+    const labels = Object.keys(data);
+    const r2Values = labels.map(label => data[label].R2);
+    const maeValues = labels.map(label => data[label].MAE);
+    const rmseValues = labels.map(label => data[label].RMSE);
+
+    // R2 Chart (Bar Chart)
+    const ctxR2 = document.getElementById('r2Chart').getContext('2d');
+    new Chart(ctxR2, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'R² Score',
+                data: r2Values,
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.4)', // RF
+                    'rgba(16, 185, 129, 0.4)', // GB (success/emerald-like)
+                    'rgba(245, 158, 11, 0.4)'  // DT
+                ],
+                borderColor: [
+                    '#3b82f6',
+                    '#10b981',
+                    '#f59e0b'
+                ],
+                borderWidth: 1.5,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    min: 0.8,
+                    max: 1.0,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+
+    // Error Comparison Chart (Grouped Bar Chart)
+    const ctxError = document.getElementById('errorChart').getContext('2d');
+    new Chart(ctxError, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'MAE',
+                    data: maeValues,
+                    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                },
+                {
+                    label: 'RMSE',
+                    data: rmseValues,
+                    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                    borderColor: '#ef4444',
+                    borderWidth: 1.5,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#f8fafc' }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8' }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
