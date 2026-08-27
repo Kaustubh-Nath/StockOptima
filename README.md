@@ -6,6 +6,13 @@ Instead of manual ordering decisions, this system utilizes a multi-model regress
 
 ---
 
+## 🌐 Live Application
+
+The project is deployed and live on Render:  
+👉 **[StockOptima - AI Inventory Optimization System](https://stockoptima-fjhg.onrender.com/predict)**
+
+---
+
 ## 🚀 Key Features
 
 1. **AI-Driven Demand Forecasting**: Uses trained scikit-learn regressors to forecast future demand volumes.
